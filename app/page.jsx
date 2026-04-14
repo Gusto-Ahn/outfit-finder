@@ -89,57 +89,57 @@ export default function Home() {
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0a0a0a; color: #f0ece4; font-family: 'DM Mono', monospace; min-height: 100vh; }
+        body { background: #0a0a0a; color: #f0ece4; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-weight: 300; min-height: 100vh; }
         .app { max-width: 860px; margin: 0 auto; padding: 48px 24px; }
-        .label { font-size: 10px; letter-spacing: 0.32em; color: #555; text-transform: uppercase; margin-bottom: 12px; }
-        .title { font-family: 'Cormorant Garamond', serif; font-size: clamp(44px,6vw,72px); font-weight: 300; line-height: 1; color: #f0ece4; margin-bottom: 4px; }
-        .title em { font-style: italic; color: #c9a96e; }
-        .sub { margin-top: 14px; font-size: 11px; color: #444; letter-spacing: 0.14em; line-height: 1.9; margin-bottom: 48px; }
+        .label { font-size: 10px; letter-spacing: 0.16em; color: #555; text-transform: uppercase; margin-bottom: 12px; font-weight: 400; }
+        .title { font-size: clamp(40px,6vw,68px); font-weight: 200; line-height: 1.05; color: #f0ece4; margin-bottom: 4px; letter-spacing: -0.02em; }
+        .title em { font-style: normal; font-weight: 500; color: #c9a96e; }
+        .sub { margin-top: 14px; font-size: 13px; color: #444; letter-spacing: 0.01em; line-height: 1.8; margin-bottom: 48px; font-weight: 300; }
         .zone { border: 1px solid #1e1e1e; background: #0e0e0e; padding: 56px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; overflow: hidden; }
         .zone:hover, .zone.drag { border-color: #c9a96e; background: #121210; }
         .zone.filled { padding: 0; cursor: default; border-color: #222; }
         .zone-icon { font-size: 24px; opacity: 0.2; margin-bottom: 14px; }
-        .zone-text { font-size: 10px; letter-spacing: 0.22em; color: #3a3a3a; text-transform: uppercase; }
+        .zone-text { font-size: 11px; letter-spacing: 0.08em; color: #3a3a3a; }
         .preview { width: 100%; max-height: 500px; object-fit: contain; display: block; }
         .overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; background: linear-gradient(transparent, rgba(0,0,0,0.85)); display: flex; justify-content: space-between; align-items: center; }
-        .overlay-label { font-size: 9px; letter-spacing: 0.18em; color: #555; }
-        .btn-sm { font-size: 9px; letter-spacing: 0.15em; color: #c9a96e; background: none; border: 1px solid #c9a96e; padding: 6px 14px; cursor: pointer; text-transform: uppercase; font-family: 'DM Mono',monospace; transition: all 0.2s; }
+        .overlay-label { font-size: 11px; letter-spacing: 0.02em; color: #555; }
+        .btn-sm { font-size: 11px; letter-spacing: 0.04em; color: #c9a96e; background: none; border: 1px solid #c9a96e; padding: 6px 14px; cursor: pointer; font-family: inherit; font-weight: 400; transition: all 0.2s; }
         .btn-sm:hover { background: #c9a96e; color: #000; }
-        .btn-main { margin-top: 18px; width: 100%; padding: 18px; background: #c9a96e; color: #0a0a0a; border: none; font-family: 'DM Mono',monospace; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+        .btn-main { margin-top: 18px; width: 100%; padding: 18px; background: #c9a96e; color: #0a0a0a; border: none; font-family: inherit; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
         .btn-main:hover:not(:disabled) { background: #dbb97e; }
         .btn-main:disabled { opacity: 0.35; cursor: not-allowed; }
-        .err { margin-top: 18px; padding: 16px 20px; background: #130808; border: 1px solid #3a1212; font-size: 10px; color: #884444; line-height: 1.6; }
+        .err { margin-top: 18px; padding: 16px 20px; background: #130808; border: 1px solid #3a1212; font-size: 12px; color: #884444; line-height: 1.6; }
         .loading { margin-top: 56px; text-align: center; padding: 56px; }
         .bar { width: 80px; height: 1px; background: #1a1a1a; margin: 0 auto 22px; position: relative; overflow: hidden; }
         .bar::after { content:''; position: absolute; left:-40%; top:0; width:40%; height:100%; background:#c9a96e; animation: sl 1.1s ease-in-out infinite; }
         @keyframes sl { 0%{left:-40%} 100%{left:100%} }
-        .load-txt { font-size: 9px; letter-spacing: 0.32em; color: #2e2e2e; text-transform: uppercase; }
+        .load-txt { font-size: 11px; letter-spacing: 0.12em; color: #2e2e2e; text-transform: uppercase; font-weight: 400; }
         .results { margin-top: 56px; }
         .res-hd { display: flex; align-items: baseline; gap: 14px; margin-bottom: 36px; padding-bottom: 16px; border-bottom: 1px solid #161616; }
-        .res-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; font-style: italic; color: #f0ece4; }
-        .res-cnt { font-size: 9px; letter-spacing: 0.2em; color: #333; }
+        .res-title { font-size: 24px; font-weight: 300; color: #f0ece4; letter-spacing: -0.01em; }
+        .res-cnt { font-size: 11px; letter-spacing: 0.06em; color: #333; font-weight: 400; }
         .style-note { padding: 22px 26px; background: #0c0c0c; border-left: 2px solid #c9a96e; margin-bottom: 20px; }
-        .sn-label { font-size: 9px; letter-spacing: 0.3em; color: #c9a96e; text-transform: uppercase; margin-bottom: 10px; }
-        .sn-text { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 300; font-style: italic; color: #666; line-height: 1.8; }
+        .sn-label { font-size: 10px; letter-spacing: 0.14em; color: #c9a96e; text-transform: uppercase; margin-bottom: 10px; font-weight: 500; }
+        .sn-text { font-size: 14px; font-weight: 300; color: #666; line-height: 1.8; letter-spacing: 0.01em; }
         .card { background: #0e0e0e; border: 1px solid #181818; padding: 26px; margin-bottom: 2px; transition: border-color 0.2s; }
         .card:hover { border-color: #252525; }
         .card-hd { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-        .cat { font-size: 9px; letter-spacing: 0.34em; color: #c9a96e; text-transform: uppercase; margin-bottom: 4px; }
-        .iname { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 300; color: #f0ece4; line-height: 1.2; }
-        .idesc { font-size: 10px; color: #3a3a3a; text-align: right; max-width: 180px; line-height: 1.6; }
+        .cat { font-size: 10px; letter-spacing: 0.14em; color: #c9a96e; text-transform: uppercase; margin-bottom: 6px; font-weight: 500; }
+        .iname { font-size: 18px; font-weight: 400; color: #f0ece4; line-height: 1.3; letter-spacing: -0.01em; }
+        .idesc { font-size: 12px; color: #3a3a3a; text-align: right; max-width: 180px; line-height: 1.6; font-weight: 300; }
         .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
-        .tag { font-size: 9px; letter-spacing: 0.12em; color: #2e2e2e; border: 1px solid #1c1c1c; padding: 3px 9px; text-transform: uppercase; }
-        .recs-lbl { font-size: 9px; letter-spacing: 0.26em; color: #252525; text-transform: uppercase; margin-bottom: 10px; }
+        .tag { font-size: 11px; letter-spacing: 0.02em; color: #2e2e2e; border: 1px solid #1c1c1c; padding: 3px 10px; font-weight: 300; }
+        .recs-lbl { font-size: 10px; letter-spacing: 0.1em; color: #252525; text-transform: uppercase; margin-bottom: 10px; font-weight: 500; }
         .rec { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; background: #090909; border: 1px solid #131313; margin-bottom: 5px; gap: 8px; }
         .rec-l { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-        .tier { font-size: 9px; letter-spacing: 0.12em; color: #252525; text-transform: uppercase; width: 36px; flex-shrink: 0; }
-        .brand { font-size: 12px; color: #ccc; letter-spacing: 0.04em; }
-        .prod { font-size: 10px; color: #333; letter-spacing: 0.04em; }
+        .tier { font-size: 10px; letter-spacing: 0.04em; color: #252525; width: 42px; flex-shrink: 0; font-weight: 400; }
+        .brand { font-size: 13px; color: #ccc; letter-spacing: -0.01em; font-weight: 400; }
+        .prod { font-size: 11px; color: #333; letter-spacing: 0.01em; font-weight: 300; }
         .rec-r { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
         .price { font-size: 11px; color: #555; white-space: nowrap; }
-        .shop-link { font-size: 9px; letter-spacing: 0.12em; color: #c9a96e; border: 1px solid #c9a96e; padding: 4px 10px; text-decoration: none; text-transform: uppercase; white-space: nowrap; font-family: 'DM Mono',monospace; transition: all 0.15s; }
+        .shop-link { font-size: 11px; letter-spacing: 0.04em; color: #c9a96e; border: 1px solid #c9a96e; padding: 4px 12px; text-decoration: none; white-space: nowrap; font-family: inherit; font-weight: 400; transition: all 0.15s; }
         .shop-link:hover { background: #c9a96e; color: #000; }
-        .reset-btn { margin-top: 40px; background: none; border: 1px solid #1a1a1a; color: #2e2e2e; font-family: 'DM Mono',monospace; font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; padding: 12px 22px; cursor: pointer; transition: all 0.2s; }
+        .reset-btn { margin-top: 40px; background: none; border: 1px solid #1a1a1a; color: #2e2e2e; font-family: inherit; font-size: 12px; letter-spacing: 0.06em; padding: 12px 22px; cursor: pointer; transition: all 0.2s; font-weight: 300; }
         .reset-btn:hover { border-color: #333; color: #555; }
         input[type=file] { display: none; }
       `}</style>
