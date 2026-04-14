@@ -15,7 +15,6 @@ export default function Home() {
     if (!file?.type.startsWith("image/")) return;
     setResult(null);
     setError(null);
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
@@ -69,6 +68,8 @@ export default function Home() {
     if (tier === "중고가") return [{ label: "무신사", url: musinsa }, { label: "29CM", url: cm29 }];
     return [{ label: "무신사", url: musinsa }, { label: "네이버쇼핑", url: naver }];
   };
+
+  const reset = () => {
     setImage(null);
     setImgB64(null);
     setResult(null);
@@ -120,13 +121,15 @@ export default function Home() {
         .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
         .tag { font-size: 9px; letter-spacing: 0.12em; color: #2e2e2e; border: 1px solid #1c1c1c; padding: 3px 9px; text-transform: uppercase; }
         .recs-lbl { font-size: 9px; letter-spacing: 0.26em; color: #252525; text-transform: uppercase; margin-bottom: 10px; }
-        .rec { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; background: #090909; border: 1px solid #131313; margin-bottom: 5px; transition: border-color 0.15s; }
-        .rec:hover { border-color: #222; }
-        .rec-l { display: flex; align-items: center; gap: 12px; }
+        .rec { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; background: #090909; border: 1px solid #131313; margin-bottom: 5px; gap: 8px; }
+        .rec-l { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
         .tier { font-size: 9px; letter-spacing: 0.12em; color: #252525; text-transform: uppercase; width: 36px; flex-shrink: 0; }
         .brand { font-size: 12px; color: #ccc; letter-spacing: 0.04em; }
         .prod { font-size: 10px; color: #333; letter-spacing: 0.04em; }
-        .price { font-size: 11px; color: #555; text-align: right; white-space: nowrap; }
+        .rec-r { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+        .price { font-size: 11px; color: #555; white-space: nowrap; }
+        .shop-link { font-size: 9px; letter-spacing: 0.12em; color: #c9a96e; border: 1px solid #c9a96e; padding: 4px 10px; text-decoration: none; text-transform: uppercase; white-space: nowrap; font-family: 'DM Mono',monospace; transition: all 0.15s; }
+        .shop-link:hover { background: #c9a96e; color: #000; }
         .reset-btn { margin-top: 40px; background: none; border: 1px solid #1a1a1a; color: #2e2e2e; font-family: 'DM Mono',monospace; font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; padding: 12px 22px; cursor: pointer; transition: all 0.2s; }
         .reset-btn:hover { border-color: #333; color: #555; }
         input[type=file] { display: none; }
@@ -152,9 +155,7 @@ export default function Home() {
               <img src={image} className="preview" alt="업로드된 이미지" />
               <div className="overlay">
                 <span className="overlay-label">업로드 완료</span>
-                <button className="btn-sm" onClick={(e) => { e.stopPropagation(); fileRef.current.click(); }}>
-                  변경
-                </button>
+                <button className="btn-sm" onClick={(e) => { e.stopPropagation(); fileRef.current.click(); }}>변경</button>
               </div>
             </>
           ) : (
@@ -165,17 +166,10 @@ export default function Home() {
           )}
         </div>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          onChange={(e) => processFile(e.target.files[0])}
-        />
+        <input ref={fileRef} type="file" accept="image/*" onChange={(e) => processFile(e.target.files[0])} />
 
         {image && !loading && !result && (
-          <button className="btn-main" onClick={analyze} disabled={!imgB64}>
-            착장 분석 시작
-          </button>
+          <button className="btn-main" onClick={analyze} disabled={!imgB64}>착장 분석 시작</button>
         )}
 
         {error && <div className="err">{error}</div>}
@@ -227,24 +221,10 @@ export default function Home() {
                             <div className="prod">{r.product}</div>
                           </div>
                         </div>
-                        <div style={{display:"flex", alignItems:"center", gap:"8px"}}>
+                        <div className="rec-r">
                           <div className="price">{r.priceRange}</div>
                           {getShopLinks(r.tier, r.brand, r.product).map((link, k) => (
-                            <a
-                              key={k}
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                fontSize:"9px", letterSpacing:"0.12em", color:"#c9a96e",
-                                border:"1px solid #c9a96e", padding:"4px 10px",
-                                textDecoration:"none", textTransform:"uppercase",
-                                whiteSpace:"nowrap", transition:"all 0.2s",
-                                fontFamily:"'DM Mono',monospace"
-                              }}
-                              onMouseOver={e=>{e.target.style.background="#c9a96e";e.target.style.color="#000"}}
-                              onMouseOut={e=>{e.target.style.background="transparent";e.target.style.color="#c9a96e"}}
-                            >
+                            <a key={k} href={link.url} target="_blank" rel="noopener noreferrer" className="shop-link">
                               {link.label}
                             </a>
                           ))}
