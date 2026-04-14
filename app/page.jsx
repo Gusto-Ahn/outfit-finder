@@ -59,14 +59,23 @@ export default function Home() {
     }
   };
 
-  const getShopLinks = (tier, brand, product) => {
-    const q = encodeURIComponent(`${brand} ${product}`);
+  const getShopLinks = (tier, brand, product, searchKeyword) => {
+    const q = encodeURIComponent(searchKeyword || `${brand} ${product}`);
     const naver = `https://search.shopping.naver.com/search/all?query=${q}`;
-    const musinsa = `https://www.musinsa.com/search/musinsa/integration?q=${q}`;
+    const musinsa = `https://www.musinsa.com/search/musinsa/integration?type=integration&q=${q}`;
     const cm29 = `https://search.29cm.co.kr/products?q=${q}`;
-    if (tier === "럭셔리") return [{ label: "네이버쇼핑", url: naver }];
-    if (tier === "중고가") return [{ label: "무신사", url: musinsa }, { label: "29CM", url: cm29 }];
-    return [{ label: "무신사", url: musinsa }, { label: "네이버쇼핑", url: naver }];
+    if (tier === "럭셔리") return [
+      { label: "네이버쇼핑", url: naver },
+      { label: "29CM", url: cm29 },
+    ];
+    if (tier === "중고가") return [
+      { label: "무신사", url: musinsa },
+      { label: "29CM", url: cm29 },
+    ];
+    return [
+      { label: "무신사", url: musinsa },
+      { label: "29CM", url: cm29 },
+    ];
   };
 
   const reset = () => {
@@ -223,7 +232,7 @@ export default function Home() {
                         </div>
                         <div className="rec-r">
                           <div className="price">{r.priceRange}</div>
-                          {getShopLinks(r.tier, r.brand, r.product).map((link, k) => (
+                          {getShopLinks(r.tier, r.brand, r.product, r.searchKeyword).map((link, k) => (
                             <a key={k} href={link.url} target="_blank" rel="noopener noreferrer" className="shop-link">
                               {link.label}
                             </a>
