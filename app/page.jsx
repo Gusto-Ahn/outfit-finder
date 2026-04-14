@@ -63,7 +63,7 @@ export default function Home() {
     const q = encodeURIComponent(searchKeyword || `${brand} ${product}`);
     const naver = `https://search.shopping.naver.com/search/all?query=${q}`;
     const musinsa = `https://www.musinsa.com/search/musinsa/integration?type=integration&q=${q}`;
-    const cm29 = `https://search.29cm.co.kr/products?q=${q}`;
+    const cm29 = `https://www.29cm.co.kr/store/search?q=${q}`;
     if (tier === "럭셔리") return [
       { label: "네이버쇼핑", url: naver },
       { label: "29CM", url: cm29 },
