@@ -146,7 +146,7 @@ export default function Home() {
 
       <div className="app">
         <div className="label">AI Fashion Finder</div>
-        <h1 className="title">Screen<br /><em>Look</em></h1>
+        <h1 className="title">Outfit<br /><em>Finder</em></h1>
         <p className="sub">
           영화 · 드라마 캡처를 올리면<br />
           비슷한 착장을 완성할 수 있는 아이템과 브랜드를 찾아드립니다
