@@ -6,6 +6,7 @@ export default function Home() {
   const [image, setImage] = useState(null);
   const [imgB64, setImgB64] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [drag, setDrag] = useState(false);
@@ -38,9 +39,35 @@ export default function Home() {
     reader.readAsDataURL(file);
   }, []);
 
+  const fetchNaverProduct = async (searchKeyword) => {
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(searchKeyword)}`);
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
+  const enrichWithProducts = async (data) => {
+    const items = await Promise.all(
+      data.items.map(async (item) => {
+        const recommendations = await Promise.all(
+          item.recommendations.map(async (rec) => {
+            const q = rec.searchKeyword || `${rec.brand} ${rec.product}`;
+            const naverProduct = await fetchNaverProduct(q);
+            return { ...rec, naverProduct };
+          })
+        );
+        return { ...item, recommendations };
+      })
+    );
+    return { ...data, items };
+  };
+
   const analyze = async () => {
     if (!imgB64) return;
     setLoading(true);
+    setLoadingMsg("스타일 분석 중");
     setError(null);
     setResult(null);
     try {
@@ -51,7 +78,10 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "분석 실패");
-      setResult(data);
+
+      setLoadingMsg("유사 상품 검색 중");
+      const enriched = await enrichWithProducts(data);
+      setResult(enriched);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -59,23 +89,10 @@ export default function Home() {
     }
   };
 
-  const getShopLinks = (tier, brand, product, searchKeyword) => {
+  const fallbackSearchUrl = (tier, brand, product, searchKeyword) => {
     const q = encodeURIComponent(searchKeyword || `${brand} ${product}`);
-    const naver = `https://search.shopping.naver.com/search/all?query=${q}`;
-    const musinsa = `https://www.musinsa.com/search/musinsa/integration?type=integration&q=${q}`;
-    const cm29 = `https://www.29cm.co.kr/store/search?q=${q}`;
-    if (tier === "럭셔리") return [
-      { label: "네이버쇼핑", url: naver },
-      { label: "29CM", url: cm29 },
-    ];
-    if (tier === "중고가") return [
-      { label: "무신사", url: musinsa },
-      { label: "29CM", url: cm29 },
-    ];
-    return [
-      { label: "무신사", url: musinsa },
-      { label: "29CM", url: cm29 },
-    ];
+    if (tier === "럭셔리") return `https://search.shopping.naver.com/search/all?query=${q}`;
+    return `https://www.musinsa.com/search/musinsa/integration?type=integration&q=${q}`;
   };
 
   const reset = () => {
@@ -130,13 +147,17 @@ export default function Home() {
         .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
         .tag { font-size: 11px; letter-spacing: 0.02em; color: #2e2e2e; border: 1px solid #1c1c1c; padding: 3px 10px; font-weight: 300; }
         .recs-lbl { font-size: 10px; letter-spacing: 0.1em; color: #252525; text-transform: uppercase; margin-bottom: 10px; font-weight: 500; }
-        .rec { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; background: #090909; border: 1px solid #131313; margin-bottom: 5px; gap: 8px; }
-        .rec-l { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-        .tier { font-size: 10px; letter-spacing: 0.04em; color: #252525; width: 42px; flex-shrink: 0; font-weight: 400; }
+        .rec { display: flex; align-items: center; background: #090909; border: 1px solid #131313; margin-bottom: 5px; gap: 0; overflow: hidden; transition: border-color 0.15s; text-decoration: none; }
+        .rec:hover { border-color: #2a2a2a; }
+        .rec-thumb { width: 72px; height: 72px; object-fit: cover; flex-shrink: 0; background: #111; display: block; }
+        .rec-thumb-empty { width: 72px; height: 72px; flex-shrink: 0; background: #0f0f0f; border-right: 1px solid #131313; }
+        .rec-body { display: flex; align-items: center; flex: 1; min-width: 0; padding: 12px 14px; gap: 12px; }
+        .tier { font-size: 10px; letter-spacing: 0.04em; color: #2a2a2a; width: 42px; flex-shrink: 0; font-weight: 400; }
+        .rec-info { flex: 1; min-width: 0; }
         .brand { font-size: 13px; color: #ccc; letter-spacing: -0.01em; font-weight: 400; }
-        .prod { font-size: 11px; color: #333; letter-spacing: 0.01em; font-weight: 300; }
-        .rec-r { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-        .price { font-size: 11px; color: #555; white-space: nowrap; }
+        .prod { font-size: 11px; color: #333; letter-spacing: 0.01em; font-weight: 300; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rec-r { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 14px; }
+        .price { font-size: 12px; color: #c9a96e; white-space: nowrap; font-weight: 400; }
         .shop-link { font-size: 11px; letter-spacing: 0.04em; color: #c9a96e; border: 1px solid #c9a96e; padding: 4px 12px; text-decoration: none; white-space: nowrap; font-family: inherit; font-weight: 400; transition: all 0.15s; }
         .shop-link:hover { background: #c9a96e; color: #000; }
         .reset-btn { margin-top: 40px; background: none; border: 1px solid #1a1a1a; color: #2e2e2e; font-family: inherit; font-size: 12px; letter-spacing: 0.06em; padding: 12px 22px; cursor: pointer; transition: all 0.2s; font-weight: 300; }
@@ -186,7 +207,7 @@ export default function Home() {
         {loading && (
           <div className="loading">
             <div className="bar" />
-            <div className="load-txt">스타일 분석 중</div>
+            <div className="load-txt">{loadingMsg}</div>
           </div>
         )}
 
@@ -221,25 +242,29 @@ export default function Home() {
                 {item.recommendations?.length > 0 && (
                   <>
                     <div className="recs-lbl">추천 아이템</div>
-                    {item.recommendations.map((r, j) => (
-                      <div key={j} className="rec">
-                        <div className="rec-l">
-                          <div className="tier">{r.tier}</div>
-                          <div>
-                            <div className="brand">{r.brand}</div>
-                            <div className="prod">{r.product}</div>
+                    {item.recommendations.map((r, j) => {
+                      const href = r.naverProduct?.link || fallbackSearchUrl(r.tier, r.brand, r.product, r.searchKeyword);
+                      const price = r.naverProduct?.price || r.priceRange;
+                      const prodTitle = r.naverProduct?.title || r.product;
+                      return (
+                        <a key={j} className="rec" href={href} target="_blank" rel="noopener noreferrer">
+                          {r.naverProduct?.image
+                            ? <img className="rec-thumb" src={r.naverProduct.image} alt={r.brand} />
+                            : <div className="rec-thumb-empty" />
+                          }
+                          <div className="rec-body">
+                            <div className="tier">{r.tier}</div>
+                            <div className="rec-info">
+                              <div className="brand">{r.brand}</div>
+                              <div className="prod">{prodTitle}</div>
+                            </div>
+                            <div className="rec-r">
+                              <div className="price">{price}</div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="rec-r">
-                          <div className="price">{r.priceRange}</div>
-                          {getShopLinks(r.tier, r.brand, r.product, r.searchKeyword).map((link, k) => (
-                            <a key={k} href={link.url} target="_blank" rel="noopener noreferrer" className="shop-link">
-                              {link.label}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                        </a>
+                      );
+                    })}
                   </>
                 )}
               </div>
