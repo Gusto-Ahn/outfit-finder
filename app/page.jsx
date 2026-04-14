@@ -60,7 +60,15 @@ export default function Home() {
     }
   };
 
-  const reset = () => {
+  const getShopLinks = (tier, brand, product) => {
+    const q = encodeURIComponent(`${brand} ${product}`);
+    const naver = `https://search.shopping.naver.com/search/all?query=${q}`;
+    const musinsa = `https://www.musinsa.com/search/musinsa/integration?q=${q}`;
+    const cm29 = `https://search.29cm.co.kr/products?q=${q}`;
+    if (tier === "럭셔리") return [{ label: "네이버쇼핑", url: naver }];
+    if (tier === "중고가") return [{ label: "무신사", url: musinsa }, { label: "29CM", url: cm29 }];
+    return [{ label: "무신사", url: musinsa }, { label: "네이버쇼핑", url: naver }];
+  };
     setImage(null);
     setImgB64(null);
     setResult(null);
@@ -219,7 +227,28 @@ export default function Home() {
                             <div className="prod">{r.product}</div>
                           </div>
                         </div>
-                        <div className="price">{r.priceRange}</div>
+                        <div style={{display:"flex", alignItems:"center", gap:"8px"}}>
+                          <div className="price">{r.priceRange}</div>
+                          {getShopLinks(r.tier, r.brand, r.product).map((link, k) => (
+                            <a
+                              key={k}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                fontSize:"9px", letterSpacing:"0.12em", color:"#c9a96e",
+                                border:"1px solid #c9a96e", padding:"4px 10px",
+                                textDecoration:"none", textTransform:"uppercase",
+                                whiteSpace:"nowrap", transition:"all 0.2s",
+                                fontFamily:"'DM Mono',monospace"
+                              }}
+                              onMouseOver={e=>{e.target.style.background="#c9a96e";e.target.style.color="#000"}}
+                              onMouseOut={e=>{e.target.style.background="transparent";e.target.style.color="#c9a96e"}}
+                            >
+                              {link.label}
+                            </a>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </>
