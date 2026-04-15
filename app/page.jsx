@@ -48,16 +48,84 @@ export default function Home() {
     }
   };
 
-  const enrichWithProducts = async (data, setMsg) => {
+  // 출처 기반 착용 제품 검색 (웹 검색 + Haiku 추출)
+  const findActualProducts = async (data, setMsg) => {
+    const source = data.source;
+    if (!source || source.type === "알수없음" || !source.searchQuery) return null;
+
+    setMsg("착용 제품 검색 중");
+
+    // 아이템별 웹 검색 병렬 실행
+    const searchResults = await Promise.all(
+      data.items.map(async (item) => {
+        const q = `${source.name} ${item.name} 착용 브랜드 제품`;
+        try {
+          const res = await fetch(`/api/websearch?q=${encodeURIComponent(q)}`);
+          return await res.json();
+        } catch {
+          return [];
+        }
+      })
+    );
+
+    // Haiku로 제품 정보 추출
+    try {
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source,
+          items: data.items.map((i) => ({ name: i.name, category: i.category })),
+          searchResults,
+        }),
+      });
+      const { products } = await res.json();
+      return products;
+    } catch {
+      return null;
+    }
+  };
+
+  const enrichWithProducts = async (data, setMsg, actualProducts) => {
     const genderPrefix = data.gender === "남성" || data.gender === "여성" ? `${data.gender} ` : "";
 
-    // 1단계: 네이버 후보 수집
+    // 1단계: 네이버 후보 수집 (착용 브랜드 + 착용 제품 + 티어 추천)
     const itemsWithCandidates = await Promise.all(
-      data.items.map(async (item) => {
+      data.items.map(async (item, i) => {
+        // 착용 제품 (웹 검색으로 찾은 경우) — 가장 우선
+        const actualProductInfo = actualProducts?.[i];
+        const actualRec = actualProductInfo
+          ? {
+              tier: "착용 제품",
+              brand: actualProductInfo.brand,
+              product: actualProductInfo.product,
+              priceRange: null,
+              searchKeyword: actualProductInfo.searchKeyword,
+              isSpecial: true,
+            }
+          : null;
+
+        // 착용 브랜드 (이미지에서 브랜드 식별된 경우) — 착용 제품 없을 때만
+        const brandRec = !actualRec && item.detectedBrand
+          ? {
+              tier: "착용 브랜드",
+              brand: item.detectedBrand,
+              product: item.name,
+              priceRange: null,
+              searchKeyword: `${item.detectedBrand} ${item.recommendations[0]?.searchKeyword || item.name}`,
+              isSpecial: true,
+            }
+          : null;
+
+        const specialRec = actualRec || brandRec;
+        const allRecs = specialRec
+          ? [specialRec, ...item.recommendations]
+          : item.recommendations;
+
         const recommendations = await Promise.all(
-          item.recommendations.map(async (rec) => {
+          allRecs.map(async (rec) => {
             const base = rec.searchKeyword || item.name;
-            const q = `${genderPrefix}${base}`;
+            const q = rec.isSpecial ? base : `${genderPrefix}${base}`;
             const candidates = await fetchNaverCandidates(q);
             return { ...rec, candidates, itemDesc: q };
           })
@@ -124,8 +192,11 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "분석 실패");
 
+      // 출처 식별된 경우 착용 제품 웹 검색
+      const actualProducts = await findActualProducts(data, setLoadingMsg);
+
       setLoadingMsg("유사 상품 검색 중");
-      const enriched = await enrichWithProducts(data, setLoadingMsg);
+      const enriched = await enrichWithProducts(data, setLoadingMsg, actualProducts);
       setResult(enriched);
     } catch (e) {
       setError(e.message);
@@ -193,10 +264,13 @@ export default function Home() {
         .recs-lbl { font-size: 10px; letter-spacing: 0.1em; color: #252525; text-transform: uppercase; margin-bottom: 10px; font-weight: 500; }
         .rec { display: flex; align-items: center; background: #090909; border: 1px solid #131313; margin-bottom: 5px; gap: 0; overflow: hidden; transition: border-color 0.15s; text-decoration: none; }
         .rec:hover { border-color: #2a2a2a; }
+        .rec.special { border-color: #2a2010; background: #0c0b08; margin-bottom: 10px; }
+        .rec.special:hover { border-color: #c9a96e55; }
         .rec-thumb { width: 72px; height: 72px; object-fit: cover; flex-shrink: 0; background: #111; display: block; }
         .rec-thumb-empty { width: 72px; height: 72px; flex-shrink: 0; background: #0f0f0f; border-right: 1px solid #131313; }
         .rec-body { display: flex; align-items: center; flex: 1; min-width: 0; padding: 12px 14px; gap: 12px; }
         .tier { font-size: 10px; letter-spacing: 0.04em; color: #2a2a2a; width: 42px; flex-shrink: 0; font-weight: 400; }
+        .tier.special { color: #c9a96e; width: auto; }
         .rec-info { flex: 1; min-width: 0; }
         .brand { font-size: 13px; color: #ccc; letter-spacing: -0.01em; font-weight: 400; }
         .prod { font-size: 11px; color: #333; letter-spacing: 0.01em; font-weight: 300; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -291,13 +365,13 @@ export default function Home() {
                       const price = r.naverProduct?.price;
                       const prodTitle = r.naverProduct?.title || r.product;
                       return (
-                        <a key={j} className="rec" href={href} target="_blank" rel="noopener noreferrer">
+                        <a key={j} className={`rec${r.isSpecial ? " special" : ""}`} href={href} target="_blank" rel="noopener noreferrer">
                           {r.naverProduct?.image
                             ? <img className="rec-thumb" src={r.naverProduct.image} alt={r.brand} />
                             : <div className="rec-thumb-empty" />
                           }
                           <div className="rec-body">
-                            <div className="tier">{r.tier}</div>
+                            <div className={`tier${r.isSpecial ? " special" : ""}`}>{r.tier}</div>
                             <div className="rec-info">
                               <div className="brand">{r.brand}</div>
                               <div className="prod">{prodTitle}</div>
