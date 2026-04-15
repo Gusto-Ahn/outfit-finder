@@ -98,7 +98,9 @@ export async function POST(request) {
       return Response.json({ error: "분석 실패: " + text.slice(0, 100) }, { status: 500 });
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    // Claude가 생성한 JSON에 trailing comma가 있을 수 있어 제거
+    const sanitized = jsonMatch[0].replace(/,(\s*[}\]])/g, "$1");
+    const result = JSON.parse(sanitized);
     return Response.json(result);
   } catch (error) {
     console.error(error);
