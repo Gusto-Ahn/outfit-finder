@@ -39,9 +39,9 @@ export default function Home() {
     reader.readAsDataURL(file);
   }, []);
 
-  const fetchNaverProduct = async (searchKeyword) => {
+  const fetchNaverProduct = async (query) => {
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(searchKeyword)}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       return await res.json();
     } catch {
       return null;
@@ -51,9 +51,15 @@ export default function Home() {
   const enrichWithProducts = async (data) => {
     const items = await Promise.all(
       data.items.map(async (item) => {
+        // 색상, 소재 속성 추출 (앞 2개)
+        const attrHint = (item.attributes || []).slice(0, 2).join(" ");
         const recommendations = await Promise.all(
           item.recommendations.map(async (rec) => {
-            const q = rec.searchKeyword || `${rec.brand} ${rec.product}`;
+            const base = rec.searchKeyword || `${rec.brand} ${rec.product}`;
+            // searchKeyword에 이미 속성이 없으면 item attributes 보완
+            const q = attrHint && !base.includes(attrHint.split(" ")[0])
+              ? `${base} ${attrHint}`
+              : base;
             const naverProduct = await fetchNaverProduct(q);
             return { ...rec, naverProduct };
           })
