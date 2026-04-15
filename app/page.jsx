@@ -49,17 +49,14 @@ export default function Home() {
   };
 
   const enrichWithProducts = async (data) => {
+    // 성별 prefix: 남성/여성만 추가, 알수없음은 생략
+    const genderPrefix = data.gender === "남성" || data.gender === "여성" ? `${data.gender} ` : "";
     const items = await Promise.all(
       data.items.map(async (item) => {
-        // 색상, 소재 속성 추출 (앞 2개)
-        const attrHint = (item.attributes || []).slice(0, 2).join(" ");
         const recommendations = await Promise.all(
           item.recommendations.map(async (rec) => {
-            const base = rec.searchKeyword || `${rec.brand} ${rec.product}`;
-            // searchKeyword에 이미 속성이 없으면 item attributes 보완
-            const q = attrHint && !base.includes(attrHint.split(" ")[0])
-              ? `${base} ${attrHint}`
-              : base;
+            const base = rec.searchKeyword || item.name;
+            const q = `${genderPrefix}${base}`;
             const naverProduct = await fetchNaverProduct(q);
             return { ...rec, naverProduct };
           })
