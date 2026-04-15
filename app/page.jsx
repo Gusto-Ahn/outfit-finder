@@ -39,31 +39,73 @@ export default function Home() {
     reader.readAsDataURL(file);
   }, []);
 
-  const fetchNaverProduct = async (query) => {
+  const fetchNaverCandidates = async (query) => {
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-      return await res.json();
+      return await res.json(); // 배열 또는 null
     } catch {
       return null;
     }
   };
 
-  const enrichWithProducts = async (data) => {
-    // 성별 prefix: 남성/여성만 추가, 알수없음은 생략
+  const enrichWithProducts = async (data, setMsg) => {
     const genderPrefix = data.gender === "남성" || data.gender === "여성" ? `${data.gender} ` : "";
-    const items = await Promise.all(
+
+    // 1단계: 모든 추천에 대해 네이버 후보 5개씩 병렬 수집
+    const itemsWithCandidates = await Promise.all(
       data.items.map(async (item) => {
         const recommendations = await Promise.all(
           item.recommendations.map(async (rec) => {
             const base = rec.searchKeyword || item.name;
             const q = `${genderPrefix}${base}`;
-            const naverProduct = await fetchNaverProduct(q);
-            return { ...rec, naverProduct };
+            const candidates = await fetchNaverCandidates(q);
+            return { ...rec, candidates, itemDesc: q };
           })
         );
         return { ...item, recommendations };
       })
     );
+
+    // 2단계: 후보가 2개 이상인 것만 Claude Haiku 배치 선별
+    const tasks = [];
+    itemsWithCandidates.forEach((item) => {
+      item.recommendations.forEach((rec) => {
+        if (Array.isArray(rec.candidates) && rec.candidates.length > 1) {
+          tasks.push({ itemDesc: rec.itemDesc, candidates: rec.candidates });
+        }
+      });
+    });
+
+    let selectedIndices = tasks.map(() => 0);
+    if (tasks.length > 0) {
+      setMsg?.("최적 상품 선별 중");
+      try {
+        const res = await fetch("/api/select", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tasks }),
+        });
+        const sel = await res.json();
+        if (sel.indices?.length === tasks.length) selectedIndices = sel.indices;
+      } catch {}
+    }
+
+    // 3단계: 선별 결과 적용
+    let taskIdx = 0;
+    const items = itemsWithCandidates.map((item) => {
+      const recommendations = item.recommendations.map((rec) => {
+        if (!Array.isArray(rec.candidates) || rec.candidates.length === 0) {
+          return { ...rec, naverProduct: null };
+        }
+        if (rec.candidates.length === 1) {
+          return { ...rec, naverProduct: rec.candidates[0] };
+        }
+        const idx = Math.min(selectedIndices[taskIdx++] ?? 0, rec.candidates.length - 1);
+        return { ...rec, naverProduct: rec.candidates[idx] };
+      });
+      return { ...item, recommendations };
+    });
+
     return { ...data, items };
   };
 
@@ -83,7 +125,7 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || "분석 실패");
 
       setLoadingMsg("유사 상품 검색 중");
-      const enriched = await enrichWithProducts(data);
+      const enriched = await enrichWithProducts(data, setLoadingMsg);
       setResult(enriched);
     } catch (e) {
       setError(e.message);

@@ -6,7 +6,7 @@ export async function GET(request) {
 
   try {
     const res = await fetch(
-      `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(q)}&display=1&sort=sim`,
+      `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(q)}&display=5&sort=sim`,
       {
         headers: {
           "X-Naver-Client-Id": process.env.NAVER_CLIENT_ID,
@@ -16,16 +16,17 @@ export async function GET(request) {
     );
 
     const data = await res.json();
-    const item = data.items?.[0];
-    if (!item) return Response.json(null);
+    if (!data.items?.length) return Response.json(null);
 
-    return Response.json({
-      title: item.title.replace(/<[^>]*>/g, ""),
-      link: item.link,
-      image: item.image,
-      price: parseInt(item.lprice).toLocaleString("ko-KR") + "원",
-      mallName: item.mallName,
-    });
+    return Response.json(
+      data.items.map((item) => ({
+        title: item.title.replace(/<[^>]*>/g, ""),
+        link: item.link,
+        image: item.image,
+        price: parseInt(item.lprice).toLocaleString("ko-KR") + "원",
+        mallName: item.mallName,
+      }))
+    );
   } catch {
     return Response.json(null);
   }
