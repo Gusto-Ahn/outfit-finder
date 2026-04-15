@@ -51,13 +51,28 @@ export default function Home() {
   const enrichWithProducts = async (data, setMsg) => {
     const genderPrefix = data.gender === "남성" || data.gender === "여성" ? `${data.gender} ` : "";
 
-    // 1단계: 모든 추천에 대해 네이버 후보 5개씩 병렬 수집
+    // 1단계: 네이버 후보 수집 (actualProduct 포함)
     const itemsWithCandidates = await Promise.all(
       data.items.map(async (item) => {
+        // actualProduct를 첫 번째 rec으로 추가
+        const actualRec = item.actualProduct
+          ? {
+              tier: "착용 제품",
+              brand: item.actualProduct.brand,
+              product: item.actualProduct.product,
+              priceRange: null,
+              searchKeyword: item.actualProduct.searchKeyword,
+              isActual: true,
+            }
+          : null;
+
+        const allRecs = actualRec ? [actualRec, ...item.recommendations] : item.recommendations;
+
         const recommendations = await Promise.all(
-          item.recommendations.map(async (rec) => {
+          allRecs.map(async (rec) => {
             const base = rec.searchKeyword || item.name;
-            const q = `${genderPrefix}${base}`;
+            // 착용 제품은 브랜드명 포함 키워드 그대로, 나머지는 성별 prefix
+            const q = rec.isActual ? base : `${genderPrefix}${base}`;
             const candidates = await fetchNaverCandidates(q);
             return { ...rec, candidates, itemDesc: q };
           })
@@ -66,7 +81,7 @@ export default function Home() {
       })
     );
 
-    // 2단계: 후보가 2개 이상인 것만 Claude Haiku 배치 선별
+    // 2단계: 후보 2개 이상인 것만 Claude Haiku 배치 선별
     const tasks = [];
     itemsWithCandidates.forEach((item) => {
       item.recommendations.forEach((rec) => {
@@ -134,10 +149,9 @@ export default function Home() {
     }
   };
 
-  const fallbackSearchUrl = (tier, brand, product, searchKeyword) => {
+  const fallbackSearchUrl = (searchKeyword, brand, product) => {
     const q = encodeURIComponent(searchKeyword || `${brand} ${product}`);
-    if (tier === "럭셔리") return `https://search.shopping.naver.com/search/all?query=${q}`;
-    return `https://www.musinsa.com/search/musinsa/integration?type=integration&q=${q}`;
+    return `https://search.shopping.naver.com/search/all?query=${q}`;
   };
 
   const reset = () => {
@@ -194,10 +208,13 @@ export default function Home() {
         .recs-lbl { font-size: 10px; letter-spacing: 0.1em; color: #252525; text-transform: uppercase; margin-bottom: 10px; font-weight: 500; }
         .rec { display: flex; align-items: center; background: #090909; border: 1px solid #131313; margin-bottom: 5px; gap: 0; overflow: hidden; transition: border-color 0.15s; text-decoration: none; }
         .rec:hover { border-color: #2a2a2a; }
+        .rec.actual { border-color: #2a2010; background: #0c0b08; margin-bottom: 10px; }
+        .rec.actual:hover { border-color: #c9a96e55; }
         .rec-thumb { width: 72px; height: 72px; object-fit: cover; flex-shrink: 0; background: #111; display: block; }
         .rec-thumb-empty { width: 72px; height: 72px; flex-shrink: 0; background: #0f0f0f; border-right: 1px solid #131313; }
         .rec-body { display: flex; align-items: center; flex: 1; min-width: 0; padding: 12px 14px; gap: 12px; }
         .tier { font-size: 10px; letter-spacing: 0.04em; color: #2a2a2a; width: 42px; flex-shrink: 0; font-weight: 400; }
+        .tier.actual { color: #c9a96e; width: auto; margin-right: 4px; }
         .rec-info { flex: 1; min-width: 0; }
         .brand { font-size: 13px; color: #ccc; letter-spacing: -0.01em; font-weight: 400; }
         .prod { font-size: 11px; color: #333; letter-spacing: 0.01em; font-weight: 300; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -288,24 +305,27 @@ export default function Home() {
                   <>
                     <div className="recs-lbl">추천 아이템</div>
                     {item.recommendations.map((r, j) => {
-                      const href = r.naverProduct?.link || fallbackSearchUrl(r.tier, r.brand, r.product, r.searchKeyword);
-                      const price = r.naverProduct?.price || r.priceRange;
+                      const href = r.naverProduct?.link || fallbackSearchUrl(r.searchKeyword, r.brand, r.product);
+                      const price = r.naverProduct?.price;
                       const prodTitle = r.naverProduct?.title || r.product;
+                      const isActual = r.tier === "착용 제품";
                       return (
-                        <a key={j} className="rec" href={href} target="_blank" rel="noopener noreferrer">
+                        <a key={j} className={`rec${isActual ? " actual" : ""}`} href={href} target="_blank" rel="noopener noreferrer">
                           {r.naverProduct?.image
                             ? <img className="rec-thumb" src={r.naverProduct.image} alt={r.brand} />
                             : <div className="rec-thumb-empty" />
                           }
                           <div className="rec-body">
-                            <div className="tier">{r.tier}</div>
+                            <div className={`tier${isActual ? " actual" : ""}`}>{r.tier}</div>
                             <div className="rec-info">
                               <div className="brand">{r.brand}</div>
                               <div className="prod">{prodTitle}</div>
                             </div>
-                            <div className="rec-r">
-                              <div className="price">{price}</div>
-                            </div>
+                            {price && (
+                              <div className="rec-r">
+                                <div className="price">{price}</div>
+                              </div>
+                            )}
                           </div>
                         </a>
                       );
