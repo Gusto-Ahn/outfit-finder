@@ -89,17 +89,16 @@ export async function POST(request) {
             },
           ],
         },
+        {
+          role: "assistant",
+          content: "{",  // prefill: JSON만 출력하도록 강제
+        },
       ],
     });
 
-    const text = message.content[0]?.text || "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return Response.json({ error: "분석 실패: " + text.slice(0, 100) }, { status: 500 });
-    }
-
-    // Claude가 생성한 JSON에 trailing comma가 있을 수 있어 제거
-    const sanitized = jsonMatch[0].replace(/,(\s*[}\]])/g, "$1");
+    // prefill로 시작한 { 를 다시 붙여서 완성된 JSON 만들기
+    const text = "{" + (message.content[0]?.text || "");
+    const sanitized = text.replace(/,(\s*[}\]])/g, "$1");
     const result = JSON.parse(sanitized);
     return Response.json(result);
   } catch (error) {
